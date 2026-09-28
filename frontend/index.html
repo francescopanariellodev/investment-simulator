@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Growth Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="page-shell">
+        <header class="hero">
+            <div>
+                <span class="eyebrow">Investment Growth Simulator</span>
+                <h1>Project your investment plan over time.</h1>
+                <p>
+                    Choose between recurring contributions and a lump-sum investment, add optional agency costs or contract clauses,
+                    and compare your result with a standard preset.
+                </p>
+            </div>
+        </header>
+
+        <section id="schermata-form" class="simulator-frame">
+            <div class="input-side">
+                <div class="section-heading">
+                    <span class="section-kicker">Configuration</span>
+                    <h2>Build your simulation</h2>
+                    <p>Fill in the core assumptions. Advanced fields are optional.</p>
+                </div>
+
+                <form id="pac-form" class="pac-form">
+                    <div class="field-group">
+                        <label>Investment method</label>
+                        <div class="investment-method" role="radiogroup" aria-label="Investment method">
+                            <label class="method-option">
+                                <input type="radio" name="investment-method" value="pac" checked>
+                                <span>
+                                    <strong>Recurring plan (PAC)</strong>
+                                    <small>Initial capital + monthly contributions</small>
+                                </span>
+                            </label>
+
+                            <label class="method-option">
+                                <input type="radio" name="investment-method" value="lump_sum">
+                                <span>
+                                    <strong>Lump sum</strong>
+                                    <small>One single investment at the beginning</small>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label id="capitale-iniziale-label" for="capitale-iniziale">Initial capital <span class="label-muted">(optional)</span></label>
+                        <div class="input-with-unit">
+                            <input type="text" inputmode="decimal" autocomplete="off" id="capitale-iniziale" value="0" data-min="0" required>
+                            <span>€</span>
+                        </div>
+                    </div>
+
+                    <div class="field-group" id="monthly-contribution-group">
+                        <label for="investimento">Monthly contribution</label>
+                        <div class="input-with-unit">
+                            <input type="text" inputmode="decimal" autocomplete="off" id="investimento" value="300" data-min="0" required>
+                            <span>€</span>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="durata">Investment horizon</label>
+                        <div class="input-with-unit">
+                            <input type="text" inputmode="decimal" autocomplete="off" id="durata" value="20" data-min="0.1" required>
+                            <span>years</span>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="rendimento">Expected annual return</label>
+                        <div class="input-with-unit">
+                            <input type="text" inputmode="decimal" autocomplete="off" id="rendimento" value="7" data-min="0" required>
+                            <span>%</span>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="tax-preset">Capital-gains tax preset</label>
+                        <div class="select-shell">
+                            <select id="tax-preset" aria-describedby="tax-preset-note">
+                                <option value="26" data-profile="Italy — standard financial capital gains" selected>Italy — 26%</option>
+                                <option value="0" data-profile="United States — federal long-term capital gains 0% bracket">United States — 0% federal LTCG</option>
+                                <option value="15" data-profile="United States — federal long-term capital gains 15% bracket">United States — 15% federal LTCG</option>
+                                <option value="20" data-profile="United States — federal long-term capital gains 20% bracket">United States — 20% federal LTCG</option>
+                                <option value="31.4" data-profile="France — PFU on securities capital gains">France — 31.4% PFU</option>
+                                <option value="26.375" data-profile="Germany — 25% capital income tax + solidarity surcharge">Germany — 26.375% approx.</option>
+                                <option value="18" data-profile="United Kingdom — individual lower CGT rate">United Kingdom — 18%</option>
+                                <option value="24" data-profile="United Kingdom — individual higher CGT rate">United Kingdom — 24%</option>
+                                <option value="0" data-profile="Switzerland — private movable capital gains">Switzerland — 0% private capital gains</option>
+                                <option value="custom" data-profile="Custom tax rate">Custom rate</option>
+                            </select>
+                        </div>
+                        <small id="tax-preset-note" class="tax-note">Simplified preset for an Italian resident's standard financial capital gain: 26%.</small>
+                        <input type="hidden" id="tasse" value="26">
+                    </div>
+
+                    <div id="custom-tax-group" class="field-group nascosto">
+                        <label for="custom-tax-rate">Custom capital-gains tax rate</label>
+                        <div class="input-with-unit">
+                            <input type="text" inputmode="decimal" autocomplete="off" id="custom-tax-rate" value="26" data-min="0" data-max="100">
+                            <span>%</span>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="inflazione">Expected annual inflation</label>
+                        <div class="input-with-unit">
+                            <input type="text" inputmode="decimal" autocomplete="off" id="inflazione" value="2" data-min="0" required>
+                            <span>%</span>
+                        </div>
+                    </div>
+
+                    <div id="form-error" class="form-error nascosto" role="alert"></div>
+
+                    <div class="agency-toggle-row">
+                        <div>
+                            <strong>Use agency / intermediary</strong>
+                            <span>Enable additional fees and contract clauses.</span>
+                        </div>
+                        <label class="switch" aria-label="Use agency or intermediary">
+                            <input type="checkbox" id="usa-agenzia">
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
+
+                    <div id="agency-fields" class="agency-fields nascosto">
+                        <div class="field-group">
+                            <label for="commissione-agenzia">Final agency fee</label>
+                            <div class="input-with-unit">
+                                <input type="text" inputmode="decimal" autocomplete="off" id="commissione-agenzia" value="0" data-min="0">
+                                <span>%</span>
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="commissione-uscita">Exit fee / penalty</label>
+                            <div class="input-with-unit">
+                                <input type="text" inputmode="decimal" autocomplete="off" id="commissione-uscita" value="0" data-min="0">
+                                <span>%</span>
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="costi-fissi">Final fixed costs</label>
+                            <div class="input-with-unit">
+                                <input type="text" inputmode="decimal" autocomplete="off" id="costi-fissi" value="0" data-min="0">
+                                <span>€</span>
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="clausole">Contract clauses / notes</label>
+                            <textarea id="clausole" rows="4" placeholder="e.g. early-exit cost, minimum threshold, special conditions..."></textarea>
+                            <small>Notes do not change the calculation; they are included in the summary.</small>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="primary-btn">
+                        Run simulation
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="preview-side">
+                <div class="preview-header">
+                    <div>
+                        <span class="section-kicker">Standard preset</span>
+                        <h2>Growth preview</h2>
+                        <p>€300/month · 20 years · 7% annual return · 26% tax · 2% inflation</p>
+                    </div>
+                    <span class="live-chip">Example</span>
+                </div>
+
+                <div class="preview-stats" id="preview-stats">
+                    <div>
+                        <span>Gross final value</span>
+                        <strong id="preview-finale">—</strong>
+                    </div>
+                    <div>
+                        <span>Total invested</span>
+                        <strong id="preview-investito">—</strong>
+                    </div>
+                    <div>
+                        <span>Real purchasing power</span>
+                        <strong id="preview-reale">—</strong>
+                    </div>
+                </div>
+
+                <div class="chart-panel">
+                    <div class="chart-toolbar">
+                        <span>Timeline labels</span>
+                        <div class="timeline-toggle" data-chart-target="preview" aria-label="Preview timeline label mode">
+                            <button type="button" class="timeline-option active" data-time-mode="relative">Relative · +20y</button>
+                            <button type="button" class="timeline-option" data-time-mode="calendar">Calendar · 2046</button>
+                        </div>
+                    </div>
+                    <div class="canvas-wrap preview-canvas-wrap">
+                        <canvas id="grafico-preview"></canvas>
+                        <div id="tooltip-preview" class="chart-tooltip" aria-hidden="true"></div>
+                    </div>
+                    <div id="legenda-preview" class="chart-legend"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="risultati" class="simulator-frame risultati-frame nascosto">
+            <div class="results-side">
+                <div class="results-header">
+                    <div>
+                        <span class="section-kicker">Simulation complete</span>
+                        <h2>Your investment-plan results</h2>
+                        <p>Final values calculated from your assumptions.</p>
+                        <div class="result-meta">
+                            <span id="result-method-chip" class="meta-chip">Recurring plan (PAC)</span>
+                            <span id="result-tax-chip" class="meta-chip">Italy · 26%</span>
+                        </div>
+                    </div>
+                    <button type="button" id="nuova-simulazione" class="ghost-btn">New simulation</button>
+                </div>
+
+                <div class="results-list">
+                    <div class="result-row result-primary">
+                        <span>Gross final value</span>
+                        <strong id="capitale-finale">€ 0</strong>
+                    </div>
+                    <div class="result-row">
+                        <span>Total invested</span>
+                        <strong id="capitale-investito">€ 0</strong>
+                    </div>
+                    <div class="result-row">
+                        <span>Investment gains</span>
+                        <strong id="interessi-maturati">€ 0</strong>
+                    </div>
+                    <div class="result-row">
+                        <span>Taxes paid</span>
+                        <strong id="tasse-pagare">€ 0</strong>
+                    </div>
+                    <div class="result-row">
+                        <span>Agency / exit costs</span>
+                        <strong id="costi-intermediario">€ 0</strong>
+                    </div>
+                    <div class="result-row result-net">
+                        <span>Net final value</span>
+                        <strong id="capitale-netto">€ 0</strong>
+                    </div>
+                    <div class="result-row">
+                        <span>Real purchasing power</span>
+                        <strong id="capitale-reale">€ 0</strong>
+                    </div>
+                </div>
+
+                <div id="clausole-riepilogo" class="clausole-summary nascosto">
+                    <span>Contract clauses</span>
+                    <p id="clausole-testo"></p>
+                </div>
+            </div>
+
+            <div class="results-chart-side">
+                <div class="preview-header results-chart-header">
+                    <div>
+                        <span class="section-kicker">Performance</span>
+                        <h2>Plan growth</h2>
+                        <p>Each line represents a different component of the simulation.</p>
+                    </div>
+                </div>
+
+                <div class="chart-panel result-chart-panel">
+                    <div class="chart-toolbar">
+                        <span>Timeline labels</span>
+                        <div class="timeline-toggle" data-chart-target="result" aria-label="Simulation timeline label mode">
+                            <button type="button" class="timeline-option active" data-time-mode="relative">Relative · +20y</button>
+                            <button type="button" class="timeline-option" data-time-mode="calendar">Calendar · 2046</button>
+                        </div>
+                    </div>
+                    <div class="canvas-wrap result-canvas-wrap">
+                        <canvas id="grafico-simulazione"></canvas>
+                        <div id="tooltip-result" class="chart-tooltip" aria-hidden="true"></div>
+                    </div>
+                    <div id="legenda-grafico" class="chart-legend"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="summary" class="summary-section nascosto">
+            <div class="summary-heading">
+                <span class="section-kicker">Summary</span>
+                <h2>What your money actually became.</h2>
+                <p>Loss percentages below use the gross final value as the common reference, so taxes and inflation can be compared and combined directly.</p>
+            </div>
+
+            <div class="summary-grid">
+                <article class="summary-card">
+                    <span>Total invested</span>
+                    <strong id="summary-invested">€0</strong>
+                    <small>Capital contributed over the full investment horizon.</small>
+                </article>
+
+                <article class="summary-card">
+                    <span>Gross final value</span>
+                    <strong id="summary-gross">€0</strong>
+                    <small>Portfolio value before taxes, fees and inflation adjustment.</small>
+                </article>
+
+                <article class="summary-card">
+                    <span>Real final value</span>
+                    <strong id="summary-real">€0</strong>
+                    <small>Estimated purchasing power after taxes, optional fees and inflation.</small>
+                </article>
+
+                <article class="summary-card loss-card">
+                    <span>Eaten by taxes</span>
+                    <strong id="summary-taxes">€0</strong>
+                    <b id="summary-taxes-percent">0.00%</b>
+                    <small>Share of gross final value removed by capital-gains tax.</small>
+                </article>
+
+                <article class="summary-card loss-card">
+                    <span>Eaten by inflation</span>
+                    <strong id="summary-inflation">€0</strong>
+                    <b id="summary-inflation-percent">0.00%</b>
+                    <small>Purchasing-power erosion between nominal net value and real value.</small>
+                </article>
+
+                <article class="summary-card loss-card loss-total">
+                    <span>Taxes + inflation</span>
+                    <strong id="summary-total-drag">€0</strong>
+                    <b id="summary-total-drag-percent">0.00%</b>
+                    <small>Combined drag from taxes and inflation, expressed against gross final value.</small>
+                </article>
+
+                <article id="summary-fees-card" class="summary-card fees-card nascosto">
+                    <span>Agency & exit costs</span>
+                    <strong id="summary-fees">€0</strong>
+                    <b id="summary-fees-percent">0.00%</b>
+                    <small>Optional intermediary costs kept separate from the tax + inflation total.</small>
+                </article>
+            </div>
+        </section>
+
+        <section class="disclaimer-card" aria-label="Financial and tax disclaimer">
+            <div class="disclaimer-icon">i</div>
+            <div>
+                <strong>Important disclaimer</strong>
+                <p>
+                    This simulator is for educational and illustrative purposes only. It is not financial,
+                    investment, tax or legal advice. Returns and inflation are assumptions, not forecasts or
+                    guarantees. Tax presets are simplified reference rates and may not match your actual tax
+                    liability: residency, asset type, holding period, account wrapper, income, allowances,
+                    loss offsets, local taxes and future law changes can materially change the result.
+                </p>
+                <p class="source-line">
+                    Tax presets checked against official sources on 28 Sep 2026: Agenzia delle Entrate, IRS,
+                    impots.gouv.fr, German Federal Ministry of Finance / EStG, GOV.UK and the Swiss Federal Tax Administration.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
